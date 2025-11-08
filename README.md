@@ -18,7 +18,14 @@ Generate monologue scripts using OpenRouter or Groq with:
 - **Intelligent context integration**: Advanced context processing with ranking, sentiment analysis, and cross-source correlation
 - Support for various AI models from both providers
 
-### 3. Enhanced Context Intelligence
+### 3. Voice Generation
+Generate audio from scripts using ElevenLabs voice cloning:
+- **Voice Cloning**: Clone any voice from a video sample (10-60 seconds)
+- **Text-to-Speech**: Convert scripts to natural-sounding audio
+- **Complete Workflow**: From topic research to final audio in one call
+- **Three composite tools**: Full workflow, script+audio, or audio-only generation
+
+### 4. Enhanced Context Intelligence
 The server uses advanced context processing to provide the best information to AI models:
 - **Intelligent Ranking**: Items are scored by relevance (40%), engagement (30%), recency (20%), and credibility (10%)
 - **Rich Content Extraction**: 
@@ -108,6 +115,45 @@ Generate a complete script in one step: automatically fetches trending topics AN
 
 **Returns:** Generated script with metadata, plus the trending data used for context
 
+### `generate_complete_content`
+Complete end-to-end workflow: Generate ideas, script, and audio with voice cloning. Perfect for complete content creation in one call.
+
+**Parameters:**
+- `topic` (string, required): The topic to research and create content about
+- `duration_seconds` (integer, required): Target duration in seconds
+- `video_path` (string, required): Path to video file for voice cloning
+- `provider` (string, optional): "openrouter" or "groq" (default: from config)
+- `style` (string, optional): Style/tone (default: "informative and engaging")
+- `limit` (integer, optional): Number of items to fetch per source (default: 3)
+- `model` (string, optional): Model to use (default: from config)
+- `output_audio_path` (string, optional): Path for output audio (default: temp file)
+
+**Returns:** Script, audio file path, voice ID, and all metadata
+
+### `generate_script_with_audio`
+Generate script from trending data and create audio with voice cloning.
+
+**Parameters:**
+- `ideas_data` (object, required): Output from `generate_ideas()`
+- `duration_seconds` (integer, required): Target duration in seconds
+- `video_path` (string, required): Path to video file for voice cloning
+- `provider` (string, optional): "openrouter" or "groq" (default: from config)
+- `style` (string, optional): Style/tone (default: "informative and engaging")
+- `model` (string, optional): Model to use (default: from config)
+- `output_audio_path` (string, optional): Path for output audio (default: temp file)
+
+**Returns:** Script, audio file path, voice ID, and metadata
+
+### `generate_audio_from_script`
+Generate audio from a script using voice cloning. Simplest tool for audio-only generation.
+
+**Parameters:**
+- `script` (string, required): The script text to convert to audio
+- `video_path` (string, required): Path to video file for voice cloning
+- `output_audio_path` (string, optional): Path for output audio (default: temp file)
+
+**Returns:** Audio file path, voice ID, and metadata
+
 ## Installation
 
 ### Prerequisites
@@ -161,7 +207,12 @@ pip install -r requirements.txt
 - Create a free account and generate an API key
 - **Free Tier:** Very generous limits with fast inference
 - **Models:** Llama 3.1, Mixtral, and more
-- **📖 See [GROQ_INTEGRATION.md](GROQ_INTEGRATION.md) for detailed setup guide**
+
+#### 6. ElevenLabs (For Voice Generation)
+- Visit [ElevenLabs](https://elevenlabs.io/)
+- Create an account and get your API key
+- **Usage:** Voice cloning and text-to-speech (paid service)
+- **Free Tier:** Limited characters per month
 
 ### Environment Variables
 
@@ -179,6 +230,9 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 # Inference APIs (at least one required)
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
+
+# ElevenLabs API (for voice generation)
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 
 # Inference Provider Selection
 INFERENCE_PROVIDER=openrouter  # or "groq"
@@ -261,6 +315,25 @@ Add this server to your MCP client configuration. For Claude Desktop, add to you
 4. Manually combine insights and create a custom script
 ```
 
+#### 3. Complete Content Creation with Voice
+```
+1. Call generate_complete_content with topic="AI breakthroughs", duration_seconds=60, video_path="/path/to/sample.mp4"
+2. Receive script, audio file, and all metadata in one call
+3. The tool automatically:
+   - Fetches trending topics
+   - Generates script
+   - Extracts audio from video
+   - Clones voice
+   - Generates final audio
+```
+
+#### 4. Audio-Only Generation
+```
+1. Already have a script
+2. Call generate_audio_from_script with your script and video_path
+3. Receive audio file with cloned voice
+```
+
 ## Project Structure
 
 ```
@@ -272,13 +345,18 @@ Content-MCP/
 │   ├── tools/
 │   │   ├── __init__.py
 │   │   ├── ideas.py           # Idea generation tools
-│   │   ├── script.py           # Script generation tools
+│   │   ├── script.py          # Script generation tools
+│   │   ├── voice.py           # Voice generation tools (NEW)
 │   │   └── context_processor.py  # Intelligent context processing
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── audio.py           # Audio extraction utilities (NEW)
 │   └── sources/
 │       ├── __init__.py
 │       ├── reddit.py          # Reddit API integration (enhanced with comments, engagement)
-│       ├── youtube.py          # YouTube API integration (enhanced with descriptions, tags)
-│       └── google_news.py      # Google News RSS integration (enhanced with metadata)
+│       ├── youtube.py         # YouTube API integration (enhanced with descriptions, tags)
+│       ├── google_news.py     # Google News RSS integration (enhanced with metadata)
+│       └── elevenlabs_voice.py  # ElevenLabs voice cloning integration (NEW)
 ├── requirements.txt
 ├── README.md
 └── .env                       # Your API keys (create this)
@@ -319,6 +397,17 @@ Content-MCP/
 - Verify your Groq account is active
 - Check the model name is valid
 - **Tip:** The system will automatically fall back to OpenRouter if configured
+
+### "ElevenLabs API key not configured"
+- Ensure `ELEVENLABS_API_KEY` is set in your `.env` file
+- Get a key at https://elevenlabs.io/
+- Voice generation tools require this API key
+
+### "Audio validation failed"
+- Video file must exist at the specified path
+- Video should contain clear speech (10-60 seconds recommended)
+- Ensure video format is supported (MP4, MOV, AVI, etc.)
+- Audio should not be silent or too quiet
 
 ### "Quota exceeded" errors
 - **YouTube**: You've exceeded 10,000 units/day. Wait until the next day (resets midnight Pacific Time)
@@ -373,12 +462,48 @@ The server now includes advanced context processing capabilities that significan
 - **AI-Powered Analysis**: Groq AI generates intelligent summaries with actionable insights
 - **Quality**: Ranking ensures only the most relevant and engaging content is included
 
+## Voice Generation Features
+
+The server now includes complete voice generation capabilities:
+
+### How It Works
+
+1. **Video Input**: Provide a video file path (10-60 seconds recommended)
+2. **Audio Extraction**: Tool automatically extracts audio from video using ffmpeg
+3. **Voice Cloning**: Audio sample is sent to ElevenLabs for instant voice cloning
+4. **Text-to-Speech**: Generated script is converted to audio using the cloned voice
+5. **Output**: Receive MP3 audio file with natural-sounding speech
+
+### Three Workflow Options
+
+1. **Complete Workflow** (`generate_complete_content`):
+   - Input: Topic + Video
+   - Process: Ideas → Script → Audio
+   - Output: Everything (script, audio, metadata)
+
+2. **Script + Audio** (`generate_script_with_audio`):
+   - Input: Trending data + Video
+   - Process: Script → Audio
+   - Output: Script and audio
+
+3. **Audio Only** (`generate_audio_from_script`):
+   - Input: Script + Video
+   - Process: Audio generation
+   - Output: Audio file
+
+### Video Requirements
+
+- **Format**: MP4, MOV, AVI, or other common formats
+- **Duration**: 10-60 seconds (10-20 seconds ideal for voice cloning)
+- **Content**: Clear speech, minimal background noise
+- **Quality**: Higher quality audio = better voice cloning
+
 ## Future Enhancements
 
-This server currently focuses on idea generation and script generation with enhanced context intelligence. Future phases will include:
-- **Audio Generation**: Voice cloning and synthesis with Eleven Labs
+Planned features for future phases:
 - **Video Generation**: Talking head videos with D-ID
 - Additional data sources and analytics
+- Voice customization options (pitch, speed, emotion)
 
 ## License
 

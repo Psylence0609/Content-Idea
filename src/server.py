@@ -15,6 +15,13 @@ from .tools.ideas import (
     generate_news_ideas
 )
 from .tools.script import generate_script, generate_script_from_ideas, generate_complete_script
+from .tools.voice import (
+    generate_complete_content,
+    generate_script_with_audio,
+    generate_audio_from_script,
+    list_all_voices,
+    find_voice_by_name
+)
 from .config import config
 
 
@@ -252,9 +259,187 @@ async def list_tools() -> list[Tool]:
                         "default": None
                     }
                 },
-                "required": ["topic", "duration_seconds"]
-            }
-        )
+            "required": ["topic", "duration_seconds"]
+        }
+    ),
+    
+    # Voice Generation Tools
+    Tool(
+        name="generate_complete_content",
+        description=(
+            "Complete end-to-end workflow: Generate ideas, script, and audio with voice cloning/reuse. "
+            "Fetches trending topics, generates a script, and generates audio. "
+            "Can clone a new voice from video OR reuse an existing voice by ID or name. "
+            "Perfect for complete content creation in one call."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "The topic to research and create content about"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "description": "Target duration of the script in seconds"
+                },
+                "video_path": {
+                    "type": "string",
+                    "description": "Path to video file for voice cloning (optional if voice_id or voice_name provided)"
+                },
+                "provider": {
+                    "type": "string",
+                    "description": f"Inference provider: 'openrouter' or 'groq' (default: {config.inference_provider})",
+                    "enum": ["openrouter", "groq"]
+                },
+                "style": {
+                    "type": "string",
+                    "description": "Style/tone of the script (default: 'informative and engaging')"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of items to fetch per source (default: 3)"
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Model to use (default: from config based on provider)"
+                },
+                "output_audio_path": {
+                    "type": "string",
+                    "description": "Optional path for output audio file (default: temp file)"
+                },
+                "voice_id": {
+                    "type": "string",
+                    "description": "Optional: existing ElevenLabs voice ID to reuse (skips cloning)"
+                },
+                "voice_name": {
+                    "type": "string",
+                    "description": "Optional: name of existing voice to search for and reuse (skips cloning if found)"
+                }
+            },
+            "required": ["topic", "duration_seconds"]
+        }
+    ),
+    Tool(
+        name="generate_script_with_audio",
+        description=(
+            "Generate script from trending data and create audio with voice cloning/reuse. "
+            "Takes trending topics data, generates a script, and generates audio. "
+            "Can clone a new voice from video OR reuse an existing voice by ID or name. "
+            "Use when you already have trending topics."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "ideas_data": {
+                    "type": "object",
+                    "description": "Output from generate_ideas() function"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "description": "Target duration of the script in seconds"
+                },
+                "video_path": {
+                    "type": "string",
+                    "description": "Path to video file for voice cloning (optional if voice_id or voice_name provided)"
+                },
+                "provider": {
+                    "type": "string",
+                    "description": f"Inference provider: 'openrouter' or 'groq' (default: {config.inference_provider})",
+                    "enum": ["openrouter", "groq"]
+                },
+                "style": {
+                    "type": "string",
+                    "description": "Style/tone of the script (default: 'informative and engaging')"
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Model to use (default: from config based on provider)"
+                },
+                "output_audio_path": {
+                    "type": "string",
+                    "description": "Optional path for output audio file (default: temp file)"
+                },
+                "voice_id": {
+                    "type": "string",
+                    "description": "Optional: existing ElevenLabs voice ID to reuse (skips cloning)"
+                },
+                "voice_name": {
+                    "type": "string",
+                    "description": "Optional: name of existing voice to search for and reuse (skips cloning if found)"
+                }
+            },
+            "required": ["ideas_data", "duration_seconds"]
+        }
+    ),
+    Tool(
+        name="generate_audio_from_script",
+        description=(
+            "Generate audio from a script using voice cloning/reuse. "
+            "Simplest tool - takes a script and generates audio. "
+            "Can clone a new voice from video OR reuse an existing voice by ID or name. "
+            "Use when you already have a script ready."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "script": {
+                    "type": "string",
+                    "description": "The script text to convert to audio"
+                },
+                "video_path": {
+                    "type": "string",
+                    "description": "Path to video file for voice cloning (optional if voice_id or voice_name provided)"
+                },
+                "output_audio_path": {
+                    "type": "string",
+                    "description": "Optional path for output audio file (default: temp file)"
+                },
+                "voice_id": {
+                    "type": "string",
+                    "description": "Optional: existing ElevenLabs voice ID to reuse (skips cloning)"
+                },
+                "voice_name": {
+                    "type": "string",
+                    "description": "Optional: name of existing voice to search for and reuse (skips cloning if found)"
+                }
+            },
+            "required": ["script"]
+        }
+    ),
+    
+    # Voice Management Tools
+    Tool(
+        name="list_all_voices",
+        description=(
+            "List all voices in the ElevenLabs account. "
+            "Returns voice IDs, names, categories, and descriptions. "
+            "Useful for discovering available voices to reuse."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
+    Tool(
+        name="find_voice_by_name",
+        description=(
+            "Find a voice by name in the ElevenLabs account. "
+            "Returns the voice ID and full details if found. "
+            "Useful for getting the ID of a specific voice to reuse."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "voice_name": {
+                    "type": "string",
+                    "description": "Name of the voice to search for"
+                }
+            },
+            "required": ["voice_name"]
+        }
+    )
     ]
 
 
@@ -340,6 +525,65 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                     style=arguments.get("style", "informative and engaging"),
                     limit=arguments.get("limit", 3),
                     model=arguments.get("model")
+                )
+            )
+        
+        elif name == "generate_complete_content":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_complete_content(
+                    topic=arguments["topic"],
+                    duration_seconds=arguments["duration_seconds"],
+                    video_path=arguments.get("video_path"),
+                    provider=arguments.get("provider"),
+                    style=arguments.get("style", "informative and engaging"),
+                    limit=arguments.get("limit", 3),
+                    model=arguments.get("model"),
+                    output_audio_path=arguments.get("output_audio_path"),
+                    voice_id=arguments.get("voice_id"),
+                    voice_name=arguments.get("voice_name")
+                )
+            )
+        
+        elif name == "generate_script_with_audio":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_script_with_audio(
+                    ideas_data=arguments["ideas_data"],
+                    duration_seconds=arguments["duration_seconds"],
+                    video_path=arguments.get("video_path"),
+                    provider=arguments.get("provider"),
+                    style=arguments.get("style", "informative and engaging"),
+                    model=arguments.get("model"),
+                    output_audio_path=arguments.get("output_audio_path"),
+                    voice_id=arguments.get("voice_id"),
+                    voice_name=arguments.get("voice_name")
+                )
+            )
+        
+        elif name == "generate_audio_from_script":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_audio_from_script(
+                    script=arguments["script"],
+                    video_path=arguments.get("video_path"),
+                    output_audio_path=arguments.get("output_audio_path"),
+                    voice_id=arguments.get("voice_id"),
+                    voice_name=arguments.get("voice_name")
+                )
+            )
+        
+        elif name == "list_all_voices":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: list_all_voices()
+            )
+        
+        elif name == "find_voice_by_name":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: find_voice_by_name(
+                    voice_name=arguments["voice_name"]
                 )
             )
         

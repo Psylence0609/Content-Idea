@@ -52,3 +52,7 @@ htmlcov/
 
 .venv/
 TEST_RESULTS.md
+
+*.wav
+*.mp3
+test_videos/

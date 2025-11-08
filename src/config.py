@@ -32,6 +32,9 @@ class Config:
         # Inference Provider Selection
         self.inference_provider = os.getenv("INFERENCE_PROVIDER", "openrouter").lower()
         
+        # ElevenLabs API Configuration (for voice generation)
+        self.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
+        
         # Script Generation Settings
         self.speaking_rate_wpm = int(os.getenv("SPEAKING_RATE_WPM", "150"))
         
@@ -51,6 +54,10 @@ class Config:
         """Check if Groq API configuration is valid."""
         return bool(self.groq_api_key)
     
+    def validate_elevenlabs_config(self) -> bool:
+        """Check if ElevenLabs API configuration is valid."""
+        return bool(self.elevenlabs_api_key)
+    
     def has_inference_api(self) -> bool:
         """Check if at least one inference API is configured."""
         return self.validate_openrouter_config() or self.validate_groq_config()
@@ -64,6 +71,7 @@ class Config:
             missing.append("YouTube API (YOUTUBE_API_KEY)")
         if not self.has_inference_api():
             missing.append("Inference API (OPENROUTER_API_KEY or GROQ_API_KEY)")
+        # ElevenLabs is optional - only needed for voice generation
         return missing
 
 
