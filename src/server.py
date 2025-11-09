@@ -22,6 +22,11 @@ from .tools.voice import (
     list_all_voices,
     find_voice_by_name
 )
+from .tools.video import (
+    generate_video_from_image_audio,
+    generate_video_from_video,
+    generate_complete_video
+)
 from .config import config
 
 
@@ -439,6 +444,127 @@ async def list_tools() -> list[Tool]:
             },
             "required": ["voice_name"]
         }
+    ),
+    Tool(
+        name="generate_video_from_image_audio",
+        description=(
+            "Generate a talking head video from an image and audio file using D-ID. "
+            "This is the basic video generation tool - provide existing image and audio files. "
+            "Perfect for when you already have prepared assets."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "image_path": {
+                    "type": "string",
+                    "description": "Path to the image file (jpg/png)"
+                },
+                "audio_path": {
+                    "type": "string",
+                    "description": "Path to the audio file (mp3/wav)"
+                },
+                "output_video_path": {
+                    "type": "string",
+                    "description": "Optional output path for the video (default: output/video/)"
+                }
+            },
+            "required": ["image_path", "audio_path"]
+        }
+    ),
+    Tool(
+        name="generate_video_from_video",
+        description=(
+            "Generate a talking head video by extracting a frame and audio from a source video. "
+            "Automatically extracts a frame (at 2 seconds) to use as the image, "
+            "and can use either the video's audio or a provided audio file. "
+            "Useful for creating videos from existing video samples."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "video_path": {
+                    "type": "string",
+                    "description": "Path to the source video file"
+                },
+                "audio_path": {
+                    "type": "string",
+                    "description": "Optional audio file path. If not provided, extracts audio from the video."
+                },
+                "output_video_path": {
+                    "type": "string",
+                    "description": "Optional output path for the video (default: output/video/)"
+                },
+                "frame_timestamp": {
+                    "type": "number",
+                    "description": "Timestamp in seconds to extract the frame (default: 2.0)"
+                }
+            },
+            "required": ["video_path"]
+        }
+    ),
+    Tool(
+        name="generate_complete_video",
+        description=(
+            "Complete end-to-end content video generation workflow. "
+            "This tool does everything: "
+            "1. Research trending topics from Reddit, YouTube, and Google News "
+            "2. Generate a script based on the trends "
+            "3. Clone voice from video (or reuse existing voice) "
+            "4. Generate audio from script "
+            "5. Extract a frame from video "
+            "6. Create talking head video with D-ID. "
+            "Perfect for agents - complete content creation from topic to video in one call."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "The topic to research and create content about"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "description": "Target duration of the script/video in seconds"
+                },
+                "video_path": {
+                    "type": "string",
+                    "description": "Source video for voice cloning and face extraction"
+                },
+                "provider": {
+                    "type": "string",
+                    "description": "Inference provider: 'groq' or 'openrouter' (default: from config)"
+                },
+                "style": {
+                    "type": "string",
+                    "description": "Script style/tone (default: 'informative and engaging')"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of items to fetch per source (default: 3)"
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Model to use (default: from config based on provider)"
+                },
+                "voice_name": {
+                    "type": "string",
+                    "description": "Optional voice name to search for and reuse"
+                },
+                "voice_id": {
+                    "type": "string",
+                    "description": "Optional existing voice ID to reuse (skips cloning)"
+                },
+                "output_video_path": {
+                    "type": "string",
+                    "description": "Optional output path for the video (default: output/video/)"
+                },
+                "frame_timestamp": {
+                    "type": "number",
+                    "description": "Timestamp to extract frame from video (default: 2.0s)"
+                }
+            },
+            "required": ["topic", "duration_seconds", "video_path"]
+        }
     )
     ]
 
@@ -584,6 +710,45 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                 _executor,
                 lambda: find_voice_by_name(
                     voice_name=arguments["voice_name"]
+                )
+            )
+        
+        elif name == "generate_video_from_image_audio":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_video_from_image_audio(
+                    image_path=arguments["image_path"],
+                    audio_path=arguments["audio_path"],
+                    output_video_path=arguments.get("output_video_path")
+                )
+            )
+        
+        elif name == "generate_video_from_video":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_video_from_video(
+                    video_path=arguments["video_path"],
+                    audio_path=arguments.get("audio_path"),
+                    output_video_path=arguments.get("output_video_path"),
+                    frame_timestamp=arguments.get("frame_timestamp", 2.0)
+                )
+            )
+        
+        elif name == "generate_complete_video":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: generate_complete_video(
+                    topic=arguments["topic"],
+                    duration_seconds=arguments["duration_seconds"],
+                    video_path=arguments["video_path"],
+                    provider=arguments.get("provider"),
+                    style=arguments.get("style", "informative and engaging"),
+                    limit=arguments.get("limit", 3),
+                    model=arguments.get("model"),
+                    voice_name=arguments.get("voice_name"),
+                    voice_id=arguments.get("voice_id"),
+                    output_video_path=arguments.get("output_video_path"),
+                    frame_timestamp=arguments.get("frame_timestamp", 2.0)
                 )
             )
         

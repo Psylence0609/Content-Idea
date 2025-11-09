@@ -19,3 +19,6 @@ elevenlabs>=1.0.0  # ElevenLabs API for voice generation
 ffmpeg-python>=0.2.0  # Audio extraction from video
 pydub>=0.25.1  # Audio file manipulation
 
+# Video Generation
+Pillow>=10.0.0  # Image processing and validation for D-ID
+

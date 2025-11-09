@@ -149,9 +149,10 @@ def generate_complete_content(
         
         # Step 4: Generate output audio path if not provided
         if not output_audio_path:
-            temp_dir = tempfile.gettempdir()
+            output_dir = os.path.join(os.path.dirname(__file__), "../../output/audio")
+            os.makedirs(output_dir, exist_ok=True)
             output_audio_path = os.path.join(
-                temp_dir,
+                output_dir,
                 f"generated_audio_{topic.replace(' ', '_')[:20]}_{os.getpid()}.mp3"
             )
         
@@ -345,10 +346,11 @@ def generate_script_with_audio(
         
         # Step 4: Generate output audio path if not provided
         if not output_audio_path:
-            temp_dir = tempfile.gettempdir()
+            output_dir = os.path.join(os.path.dirname(__file__), "../../output/audio")
+            os.makedirs(output_dir, exist_ok=True)
             topic = ideas_data.get("topic", "content")
             output_audio_path = os.path.join(
-                temp_dir,
+                output_dir,
                 f"generated_audio_{topic.replace(' ', '_')[:20]}_{os.getpid()}.mp3"
             )
         
@@ -500,9 +502,10 @@ def generate_audio_from_script(
         
         # Step 3: Generate output audio path if not provided
         if not output_audio_path:
-            temp_dir = tempfile.gettempdir()
+            output_dir = os.path.join(os.path.dirname(__file__), "../../output/audio")
+            os.makedirs(output_dir, exist_ok=True)
             output_audio_path = os.path.join(
-                temp_dir,
+                output_dir,
                 f"generated_audio_{os.getpid()}.mp3"
             )
         

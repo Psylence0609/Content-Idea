@@ -35,6 +35,9 @@ class Config:
         # ElevenLabs API Configuration (for voice generation)
         self.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
         
+        # D-ID API Configuration (for video generation)
+        self.did_api_key = os.getenv("DID_API_KEY")
+        
         # Script Generation Settings
         self.speaking_rate_wpm = int(os.getenv("SPEAKING_RATE_WPM", "150"))
         
@@ -57,6 +60,10 @@ class Config:
     def validate_elevenlabs_config(self) -> bool:
         """Check if ElevenLabs API configuration is valid."""
         return bool(self.elevenlabs_api_key)
+    
+    def validate_did_config(self) -> bool:
+        """Check if D-ID API configuration is valid."""
+        return bool(self.did_api_key)
     
     def has_inference_api(self) -> bool:
         """Check if at least one inference API is configured."""

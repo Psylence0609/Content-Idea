@@ -56,3 +56,13 @@ TEST_RESULTS.md
 *.wav
 *.mp3
 test_videos/
+
+# Generated output files
+output/audio/*.mp3
+output/video/*.mp4
+!output/audio/.gitkeep
+!output/video/.gitkeep
+
+*.mp4
+
+*.txt

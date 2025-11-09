@@ -346,19 +346,27 @@ Content-MCP/
 │   │   ├── __init__.py
 │   │   ├── ideas.py           # Idea generation tools
 │   │   ├── script.py          # Script generation tools
-│   │   ├── voice.py           # Voice generation tools (NEW)
+│   │   ├── voice.py           # Voice generation tools
+│   │   ├── video.py           # Video generation tools (NEW)
 │   │   └── context_processor.py  # Intelligent context processing
 │   ├── utils/
 │   │   ├── __init__.py
-│   │   └── audio.py           # Audio extraction utilities (NEW)
+│   │   ├── audio.py           # Audio extraction utilities
+│   │   └── video.py           # Video processing utilities (NEW)
 │   └── sources/
 │       ├── __init__.py
-│       ├── reddit.py          # Reddit API integration (enhanced with comments, engagement)
-│       ├── youtube.py         # YouTube API integration (enhanced with descriptions, tags)
-│       ├── google_news.py     # Google News RSS integration (enhanced with metadata)
-│       └── elevenlabs_voice.py  # ElevenLabs voice cloning integration (NEW)
+│       ├── reddit.py          # Reddit API integration (enhanced)
+│       ├── youtube.py         # YouTube API integration (enhanced)
+│       ├── google_news.py     # Google News RSS integration (enhanced)
+│       ├── elevenlabs_voice.py  # ElevenLabs voice cloning
+│       └── did_video.py       # D-ID video generation (NEW)
+├── output/
+│   ├── audio/                 # Generated audio files (NEW)
+│   └── video/                 # Generated video files (NEW)
 ├── requirements.txt
 ├── README.md
+├── test_voice_generation.py   # Voice generation tests
+├── test_video_generation.py   # Video generation tests (NEW)
 └── .env                       # Your API keys (create this)
 ```
 
@@ -371,6 +379,8 @@ Content-MCP/
 | Google News | ✅ Yes | Unlimited | RSS feeds, no key needed |
 | OpenRouter | ❌ Paid | Usage-based | Depends on model selected |
 | Groq | ✅ Yes | Very generous | FREE with fast inference! |
+| ElevenLabs | ⚠️ Limited | 10,000 chars/month | Voice cloning & TTS (paid plans available) |
+| D-ID | ⚠️ Limited | Free trial credits | Video generation (paid plans available) |
 
 ## Troubleshooting
 
@@ -498,12 +508,93 @@ The server now includes complete voice generation capabilities:
 - **Content**: Clear speech, minimal background noise
 - **Quality**: Higher quality audio = better voice cloning
 
+## Video Generation Features
+
+The server now includes complete video generation capabilities using D-ID API:
+
+### How It Works
+
+1. **Image + Audio**: Provide an image and audio file
+2. **Frame Extraction**: Automatically extract a frame from a video (at 2 seconds)
+3. **Voice Cloning**: Extract and clone voice from video
+4. **Script Generation**: Generate script from trending topics
+5. **Video Synthesis**: D-ID creates a talking head video with synchronized lip movements
+6. **Output**: Receive MP4 video file with realistic talking head animation
+
+### Three Video Tools
+
+1. **Basic Video Generation** (`generate_video_from_image_audio`):
+   - Input: Image file + Audio file
+   - Process: D-ID video generation
+   - Output: Talking head video
+   - Use case: When you have prepared assets
+
+2. **Video from Video** (`generate_video_from_video`):
+   - Input: Source video (optional: separate audio file)
+   - Process: Extract frame + audio → D-ID video generation
+   - Output: Talking head video
+   - Use case: Create videos from existing video samples
+
+3. **Complete Video Workflow** (`generate_complete_video`):
+   - Input: Topic + Source video
+   - Process: Ideas → Script → Voice cloning → Audio → Frame extraction → Video
+   - Output: Complete video with script, audio, and video files
+   - Use case: End-to-end content creation from topic to video
+
+### Image Requirements
+
+- **Format**: JPG, JPEG, or PNG
+- **Resolution**: Minimum 256x256 pixels (higher recommended)
+- **Content**: Clear, well-lit face for best results
+- **Quality**: Higher quality = better video output
+
+### Video Output
+
+- **Format**: MP4
+- **Duration**: Matches input audio duration
+- **Quality**: HD (depends on D-ID plan)
+- **Location**: Saved to `output/video/` directory
+
+### Testing
+
+Run the video generation test suite:
+
+```bash
+python test_video_generation.py
+```
+
+The test includes:
+- Frame extraction verification
+- Image/audio validation
+- D-ID API connectivity
+- Video from video workflow
+- Complete end-to-end workflow
+
+### Troubleshooting Video Generation
+
+**D-ID API Issues**:
+- Ensure DID_API_KEY is set in .env
+- Check your D-ID account credits
+- Verify image meets minimum requirements
+- Videos take 30-60 seconds to generate
+
+**Frame Extraction Issues**:
+- Ensure ffmpeg is installed (`brew install ffmpeg` on macOS)
+- Check video file is not corrupted
+- Try different frame_timestamp values (default is 2.0 seconds)
+
+**Output Issues**:
+- Check `output/video/` directory exists
+- Verify disk space available
+- Check file permissions
+
 ## Future Enhancements
 
 Planned features for future phases:
-- **Video Generation**: Talking head videos with D-ID
 - Additional data sources and analytics
 - Voice customization options (pitch, speed, emotion)
+- Video editing and post-processing features
+- Multiple talking head positions and angles
 
 ## License
 
