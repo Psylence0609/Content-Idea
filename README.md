@@ -1,4 +1,4 @@
-# Content MCP Server
+# CurateX
 
 **A one-stop MCP server for AI-powered content creation** from trending research to final video, fully automated.
 

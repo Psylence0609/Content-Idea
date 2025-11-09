@@ -53,16 +53,15 @@ htmlcov/
 .venv/
 TEST_RESULTS.md
 
-*.wav
-*.mp3
+# Ignore test media files
 test_videos/
+test_content/
 
-# Generated output files
-output/audio/*.mp3
-output/video/*.mp4
-!output/audio/.gitkeep
-!output/video/.gitkeep
-
+# Ignore media files everywhere except output directories
+*.mp3
 *.mp4
+*.wav
+!output/audio/*.mp3
+!output/video/*.mp4
 
 *.txt

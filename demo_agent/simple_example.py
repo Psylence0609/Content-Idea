@@ -75,12 +75,14 @@ async def create_agent():
         markdown=True,
         description="Content creation assistant with trending topic research and voice generation",
         instructions=[
-            "ALWAYS use the available MCP tools to answer questions - never make up information",
-            "When asked about voices, use the list_all_voices tool to get actual voices from ElevenLabs",
-            "When asked about trending topics, use generate_ideas or source-specific tools (generate_reddit_ideas, generate_youtube_ideas, generate_news_ideas)",
-            "When asked to create content, use the appropriate generate_complete_content or generate_script tools",
-            "Show the user what tools you're using and what data you're getting from them",
-            "If a tool returns data, present it to the user clearly"
+            "YOU ARE STRICTLY FORBIDDEN FROM GENERATING SCRIPTS YOURSELF. You MUST use the MCP tools for ALL content generation.",
+            "CRITICAL: When asked to generate ANY script, you MUST call generate_complete_script or generate_script tool. DO NOT write scripts yourself.",
+            "CRITICAL: When asked about trending topics, you MUST call generate_ideas, generate_reddit_ideas, generate_youtube_ideas, or generate_news_ideas tool.",
+            "CRITICAL: When asked about voices, you MUST call list_all_voices tool.",
+            "After calling a tool, present the tool's output to the user. DO NOT modify, rewrite, or improve the tool's output.",
+            "Always show which tool you're calling and why.",
+            "The MCP tools contain specialized logic for emotional tags, context gathering, and voice cloning - you cannot replicate this.",
+            "If a user asks for a script, your ONLY job is to call the appropriate tool with the right parameters and show the result."
         ]
     )
     
@@ -168,10 +170,16 @@ async def interactive_mode():
     print("  - 'Research trending AI topics'")
     print("  - 'Generate a 30-second script about machine learning'")
     print("  - 'List my available voices'")
-    print("  - 'Create content about climate change with my narrator voice'")
+    print("  - 'Create content about climate change with uploaded video'")
+    print("  - 'Clone voice from uploaded video and save as JD'")
+    print("="*70)
+    print("\n📹 Video Context: When you mention 'uploaded video', it refers to test_content/JD.mp4\n")
     print("="*70 + "\n")
     
     agent, mcp_tools = await create_agent()
+    
+    # Default video path for voice cloning
+    default_video_path = str(PROJECT_ROOT / "test_content" / "JD.mp4")
     
     try:
         while True:
@@ -191,8 +199,17 @@ async def interactive_mode():
                     print("\n🔄 Conversation cleared. Starting fresh!\n")
                     continue
                 
+                # Add system context if user mentions "uploaded video"
+                enriched_prompt = user_input
+                if "uploaded video" in user_input.lower():
+                    enriched_prompt = f"""SYSTEM CONTEXT: The uploaded video is located at: {default_video_path}
+
+User request: {user_input}
+
+Instructions: Replace any mention of "uploaded video" or "the video" with the actual path: {default_video_path}"""
+                
                 print("\n🤖 Agent: ", end="", flush=True)
-                response = await agent.arun(user_input)
+                response = await agent.arun(enriched_prompt)
                 
                 # Check if response is empty
                 if hasattr(response, 'content'):
