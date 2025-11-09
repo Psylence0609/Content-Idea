@@ -32,7 +32,7 @@ async def create_agent():
     mcp_tools = MCPTools(
         transport="stdio",
         command=str(launcher_script),
-        timeout_seconds=300  # 5 minutes for complete video generation (fetching, AI processing, voice cloning, video generation, etc.)
+        timeout_seconds=600  # 5 minutes for complete video generation (fetching, AI processing, voice cloning, video generation, etc.)
     )
     
     # Connect to MCP server (this is critical!)
