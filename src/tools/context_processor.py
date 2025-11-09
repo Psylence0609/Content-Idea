@@ -119,17 +119,15 @@ def calculate_recency_score(item: Dict[str, Any], source_type: str) -> float:
                 # Remove timezone info for simplicity
                 date_str = published_at.split('T')[0] if 'T' in published_at else published_at
                 if date_str:
-                    # Simple age calculation based on date string
-                    # This is approximate - for exact calculation would need full date parsing
-                    return 75  # Default recency for YouTube (videos are usually recent)
+                    return 75
             except Exception:
                 pass
-        return 50  # Default if can't parse
+        return 50
     
     elif source_type == "google_news":
         if "recency_score" in item:
             return item["recency_score"]
-        return 50  # Default
+        return 50
     
     return 50
 

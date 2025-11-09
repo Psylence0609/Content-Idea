@@ -35,7 +35,6 @@ def _generate_with_groq(
             temperature=0.7,
         )
         
-        # Debug: Check response structure
         if not response.choices:
             return {
                 "success": False,

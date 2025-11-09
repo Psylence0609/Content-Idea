@@ -46,15 +46,12 @@ class RedditSource:
             results = []
             sub = self.reddit.subreddit(subreddit)
             
-            # Search for posts related to the topic
             for post in sub.search(topic, sort=sort, limit=limit):
-                # Extract selftext (full content, truncated to 500 chars)
                 selftext = post.selftext[:500] if post.selftext else ""
                 
-                # Get top 3 comments (sorted by score)
                 top_comments = []
                 try:
-                    post.comments.replace_more(limit=0)  # Load all comments
+                    post.comments.replace_more(limit=0)
                     comments = sorted(
                         post.comments.list(),
                         key=lambda c: c.score,
@@ -63,21 +60,18 @@ class RedditSource:
                     for comment in comments:
                         if hasattr(comment, 'body') and comment.body:
                             top_comments.append({
-                                "text": comment.body[:200],  # Truncate long comments
+                                "text": comment.body[:200],
                                 "score": comment.score,
                                 "author": str(comment.author) if comment.author else "[deleted]"
                             })
                 except Exception:
-                    # If comments fail to load, continue without them
                     pass
                 
-                # Calculate engagement score: (score * 0.4) + (comments * 0.6)
                 engagement_score = (post.score * 0.4) + (post.num_comments * 0.6)
                 
-                # Calculate recency score (newer posts get higher score)
                 from datetime import datetime
                 age_hours = (datetime.now().timestamp() - post.created_utc) / 3600
-                recency_score = max(0, 100 - (age_hours / 24))  # Decay over days
+                recency_score = max(0, 100 - (age_hours / 24))
                 
                 results.append({
                     "title": post.title,

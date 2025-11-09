@@ -48,18 +48,15 @@ class YouTubeSource:
             results = []
             video_ids = []
             
-            # Extract video IDs
             for item in search_response.get('items', []):
                 video_ids.append(item['id']['videoId'])
             
-            # Get detailed statistics, content details, and snippet for videos
             if video_ids:
                 videos_response = self.youtube.videos().list(
                     part='statistics,contentDetails,snippet',
                     id=','.join(video_ids)
                 ).execute()
                 
-                # Create a map of video stats and details
                 stats_map = {}
                 for video in videos_response.get('items', []):
                     stats = video.get('statistics', {})
@@ -70,18 +67,12 @@ class YouTubeSource:
                     like_count = int(stats.get('likeCount', 0))
                     comment_count = int(stats.get('commentCount', 0))
                     
-                    # Calculate engagement ratio (likes + comments per view)
                     engagement_ratio = 0
                     if view_count > 0:
                         engagement_ratio = ((like_count + comment_count) / view_count) * 100
                     
-                    # Extract description (first 300 chars)
                     description = snippet.get('description', '')[:300]
-                    
-                    # Extract tags/keywords
-                    tags = snippet.get('tags', [])[:10]  # Top 10 tags
-                    
-                    # Extract channel info
+                    tags = snippet.get('tags', [])[:10]
                     channel_title = snippet.get('channelTitle', '')
                     channel_id = snippet.get('channelId', '')
                     

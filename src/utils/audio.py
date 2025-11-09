@@ -79,11 +79,8 @@ def validate_audio_file(audio_path: str, min_duration: float = 1.0, max_duration
         if duration_seconds < min_duration:
             return False, f"Audio too short ({duration_seconds:.1f}s). Need at least {min_duration}s of audio."
         
-        # Only reject extremely long audio (>10 minutes is excessive)
         if duration_seconds > max_duration:
             return False, f"Audio too long ({duration_seconds:.1f}s). Maximum {max_duration}s supported."
-        
-        # Note: We removed the silence check - let ElevenLabs handle audio quality
         
         return True, f"Audio valid ({duration_seconds:.1f}s)"
         

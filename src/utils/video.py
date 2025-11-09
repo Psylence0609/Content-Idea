@@ -61,10 +61,7 @@ def extract_best_frame(video_path: str, output_path: str = None) -> str:
     """
     Extract the best frame from a video for use as a profile image.
     
-    Currently extracts at 2 seconds. Future improvements could:
-    - Analyze multiple frames
-    - Detect faces and choose best face-centered frame
-    - Apply quality scoring
+    Extracts at 2 seconds to avoid intro/fade effects.
     
     Args:
         video_path: Path to the video file
@@ -73,8 +70,6 @@ def extract_best_frame(video_path: str, output_path: str = None) -> str:
     Returns:
         Path to the extracted frame
     """
-    # For now, just extract at 2 seconds
-    # This is typically after any intro/fade effects
     return extract_frame_from_video(video_path, timestamp=2.0, output_path=output_path)
 
 

@@ -829,8 +829,6 @@ Please generate a {duration}-second script in a {style} style based on the conte
 @app.list_resources()
 async def list_resources() -> list[Resource]:
     """List available resources (automatically maintained data)."""
-    # Resources are dynamically generated based on cached topics
-    # For now, return a template resource structure
     resources = [
         Resource(
             uri="trending://topics/current",
@@ -839,11 +837,6 @@ async def list_resources() -> list[Resource]:
             mimeType="application/json"
         )
     ]
-    
-    # Add resources for cached topics (if any)
-    cache = get_cache()
-    # Note: In a real implementation, you'd track which topics have cached data
-    # For now, we'll return the template resource
     
     return resources
 
@@ -862,8 +855,6 @@ async def read_resource(uri: str) -> TextResourceContents:
         topic = uri_str.replace("trending://topics/", "").strip()
         
         if topic == "current":
-            # Return current trending topics (would need to track this)
-            # For now, return a placeholder
             content = json.dumps({
                 "message": "Use trending://topics/{topic} to get specific topic data",
                 "example": "trending://topics/AI"

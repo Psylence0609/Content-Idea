@@ -64,7 +64,6 @@ class GoogleNewsSource:
                 except Exception:
                     pass
                 
-                # Extract keywords
                 text = f"{title} {description}".lower()
                 keywords = []
                 common_news_words = ['breaking', 'update', 'report', 'announce', 'reveal', 'confirm', 'deny']
@@ -72,7 +71,6 @@ class GoogleNewsSource:
                     if word in text:
                         keywords.append(word)
                 
-                # Source credibility
                 major_outlets = ['bbc', 'cnn', 'reuters', 'ap', 'the new york times', 'washington post', 
                                'the guardian', 'wall street journal', 'bloomberg', 'forbes']
                 is_major_outlet = any(outlet in source.lower() for outlet in major_outlets)
