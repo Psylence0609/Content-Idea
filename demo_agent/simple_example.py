@@ -28,22 +28,17 @@ async def create_agent():
     # Use the launcher script
     launcher_script = Path(__file__).parent / "launch_mcp.sh"
     
-    # Initialize MCP tools
+    # Initialize MCP tools with increased timeout for long-running operations
     mcp_tools = MCPTools(
         transport="stdio",
-        command=str(launcher_script)
+        command=str(launcher_script),
+        timeout_seconds=300  # 5 minutes for complete video generation (fetching, AI processing, voice cloning, video generation, etc.)
     )
     
     # Connect to MCP server (this is critical!)
     print("🔌 Connecting to MCP server...")
     await mcp_tools.connect()
     print("✅ MCP server connected!")
-    
-    # Increase timeout for long-running operations like audio generation
-    if hasattr(mcp_tools, 'timeout'):
-        mcp_tools.timeout = 120
-    elif hasattr(mcp_tools, 'session') and hasattr(mcp_tools.session, 'timeout'):
-        mcp_tools.session.timeout = 120
     
     # Print available tools for debugging
     if hasattr(mcp_tools, 'functions'):

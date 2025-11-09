@@ -239,6 +239,23 @@ Target word count: approximately {target_word_count} words (for {duration_second
     
     if trending_info:
         prompt += f"\nContext from trending data:\n{trending_info}\n"
+        prompt += "\nIMPORTANT: Use the context information above to write about the ACTUAL CONTENT and topics. "
+        prompt += "DO NOT mention Reddit, YouTube, or other sources in the script. "
+        prompt += "Focus on the subject matter itself, not where the information came from.\n"
+    
+    # Add ElevenLabs emotional tags instructions
+    prompt += """
+VOICE ENHANCEMENT: You can use ElevenLabs emotional and delivery tags to make the audio more expressive.
+Available tags (use sparingly and naturally):
+- Emotions: [happy], [excited], [sad], [angry], [nervous], [curious], [mischievously], [sarcastic]
+- Delivery: [whispers], [shouts], [speaking softly], [calm], [slowly], [rushed]
+- Sounds: [laughs], [chuckles], [giggles], [sighs], [clears throat]
+- Timing: [pause], [long pause]
+
+Example: "This is incredible! [excited] The results show a 300% increase [pause] which nobody expected."
+
+Use these tags naturally to enhance emotion and pacing. Don't overuse them - 2-4 tags per 30 seconds is ideal.
+"""
     
     # Check if this is a reasoning model and adjust prompt accordingly
     is_reasoning_model = selected_provider == "groq" and selected_model and ("oss" in selected_model.lower() or "qwen" in selected_model.lower())
@@ -255,6 +272,7 @@ Requirements:
 - Make it interesting and informative
 - Write ONLY the spoken script content
 - NO reasoning, NO explanations, NO meta-commentary
+- Include emotion/delivery tags where appropriate for expressiveness
 - Start speaking immediately
 
 BEGIN THE SCRIPT NOW:"""
@@ -265,6 +283,7 @@ Requirements:
 - Structure the content with a clear beginning, middle, and end
 - Make it interesting and informative
 - Write ONLY the script content, no stage directions or meta-commentary
+- Include emotion/delivery tags where appropriate to enhance expressiveness
 - Ensure it flows naturally when read aloud
 
 Script:"""

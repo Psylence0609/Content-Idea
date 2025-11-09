@@ -23,7 +23,7 @@ class Config:
         
         # OpenRouter API Configuration
         self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "anthropic/claude-3-sonnet")
+        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
         
         # Groq API Configuration (backup/alternative)
         self.groq_api_key = os.getenv("GROQ_API_KEY")
@@ -67,7 +67,7 @@ class Config:
     
     def has_inference_api(self) -> bool:
         """Check if at least one inference API is configured."""
-        return self.validate_openrouter_config() or self.validate_groq_config()
+        return self.validate_openrouter_config()
     
     def get_missing_configs(self) -> list[str]:
         """Return a list of missing configuration items."""
@@ -77,7 +77,7 @@ class Config:
         if not self.validate_youtube_config():
             missing.append("YouTube API (YOUTUBE_API_KEY)")
         if not self.has_inference_api():
-            missing.append("Inference API (OPENROUTER_API_KEY or GROQ_API_KEY)")
+            missing.append("Inference API (OPENROUTER_API_KEY)")
         # ElevenLabs is optional - only needed for voice generation
         return missing
 

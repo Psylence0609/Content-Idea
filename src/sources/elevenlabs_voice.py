@@ -87,7 +87,7 @@ class ElevenLabsVoice:
         text: str,
         voice_id: str,
         output_path: str,
-        model: str = "eleven_multilingual_v2"
+        model: str = "eleven_v3"
     ) -> str:
         """
         Generate audio from text using a cloned voice.
@@ -96,7 +96,7 @@ class ElevenLabsVoice:
             text: Text to convert to speech
             voice_id: ID of the voice to use
             output_path: Path to save the generated audio
-            model: ElevenLabs model to use (default: eleven_multilingual_v2)
+            model: ElevenLabs model to use (default: eleven_v3 for emotional tag support)
             
         Returns:
             Path to the generated audio file

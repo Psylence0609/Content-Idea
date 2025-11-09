@@ -569,12 +569,12 @@ def generate_ai_powered_summary(
         AI-generated intelligent summary string
     """
     try:
-        from groq import Groq
+        import requests
         from ..config import config
         
-        # Check if Groq is available
-        if not config.validate_groq_config():
-            # Fallback to rule-based summary if Groq not available
+        # Check if OpenRouter is available
+        if not config.validate_openrouter_config():
+            # Fallback to rule-based summary if OpenRouter not available
             return None
         
         # Prepare data for AI analysis
@@ -632,21 +632,34 @@ Generate a concise but comprehensive summary (300-500 words) that:
 - Explains cross-source connections
 - Provides clear takeaways for content creators
 
-Output ONLY the summary text, no meta-commentary or explanations."""
+IMPORTANT: Focus on the CONTENT and themes themselves. Minimize or avoid explicit mentions of the platforms 
+(Reddit, YouTube, News) - instead, describe what people are discussing, what's trending, and why it matters.
+The summary should read as insights about the topic, not as a report about social media activity.
 
-        # Call Groq API
-        client = Groq(api_key=config.groq_api_key)
-        response = client.chat.completions.create(
-            model=config.groq_model,
-            messages=[
-                {"role": "system", "content": "You are an expert content analyst who identifies trends and insights from social media, video platforms, and news sources."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
+Output ONLY the summary text, no meta-commentary or explanations."""
+    
+        # Call OpenRouter API
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {config.openrouter_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": config.openrouter_model,
+                "messages": [
+                    {"role": "system", "content": "You are an expert content analyst who identifies trends and insights from social media, video platforms, and news sources."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7
+            },
+            timeout=30
         )
+        response.raise_for_status()
+        data = response.json()
         
-        if response.choices and response.choices[0].message.content:
-            return response.choices[0].message.content.strip()
+        if data.get("choices") and data["choices"][0].get("message", {}).get("content"):
+            return data["choices"][0]["message"]["content"].strip()
         else:
             return None
             

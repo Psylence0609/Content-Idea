@@ -2,10 +2,10 @@
 
 import asyncio
 import json
-from typing import Any
+from typing import Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import Tool, TextContent, Prompt, PromptArgument, Resource, PromptMessage, TextResourceContents, GetPromptResult
 from mcp.server.stdio import stdio_server
 
 from .tools.ideas import (
@@ -27,6 +27,10 @@ from .tools.video import (
     generate_video_from_video,
     generate_complete_video
 )
+from .utils.query_analyzer import analyze_query_intent
+from .services.context_enricher import enrich_query_with_context, fetch_relevant_context
+from .services.context_cache import get_cache
+from .middleware.context_middleware import get_middleware
 from .config import config
 
 
@@ -47,7 +51,9 @@ async def list_tools() -> list[Tool]:
             description=(
                 "Generate content ideas by aggregating trending topics from multiple sources "
                 "(Reddit, YouTube, and Google News). Returns structured data with trending topics "
-                "and metadata from all sources."
+                "and metadata from all sources. "
+                "NOTE: For automatic context injection, use the 'trending_analysis' prompt or "
+                "read from 'trending://topics/{topic}' resource instead of calling this tool directly."
             ),
             inputSchema={
                 "type": "object",
@@ -269,14 +275,16 @@ async def list_tools() -> list[Tool]:
     ),
     
     # Voice Generation Tools
-    Tool(
-        name="generate_complete_content",
-        description=(
-            "Complete end-to-end workflow: Generate ideas, script, and audio with voice cloning/reuse. "
-            "Fetches trending topics, generates a script, and generates audio. "
-            "Can clone a new voice from video OR reuse an existing voice by ID or name. "
-            "Perfect for complete content creation in one call."
-        ),
+        Tool(
+            name="generate_complete_content",
+            description=(
+                "Complete end-to-end workflow: Generate ideas, script, and audio with voice cloning/reuse. "
+                "AUTOMATIC CONTEXT FETCHING: This tool automatically fetches trending topics from Reddit, "
+                "YouTube, and News - no separate tool calls needed. Then generates a script incorporating "
+                "those trends, and generates audio. Can clone a new voice from video OR reuse an existing "
+                "voice by ID or name. Perfect for complete content creation in ONE CALL - everything happens "
+                "automatically internally. NO TOOL CHAINING NEEDED."
+            ),
         inputSchema={
             "type": "object",
             "properties": {
@@ -502,19 +510,20 @@ async def list_tools() -> list[Tool]:
             "required": ["video_path"]
         }
     ),
-    Tool(
-        name="generate_complete_video",
-        description=(
-            "Complete end-to-end content video generation workflow. "
-            "This tool does everything: "
-            "1. Research trending topics from Reddit, YouTube, and Google News "
-            "2. Generate a script based on the trends "
-            "3. Clone voice from video (or reuse existing voice) "
-            "4. Generate audio from script "
-            "5. Extract a frame from video "
-            "6. Create talking head video with D-ID. "
-            "Perfect for agents - complete content creation from topic to video in one call."
-        ),
+        Tool(
+            name="generate_complete_video",
+            description=(
+                "Complete end-to-end content video generation workflow. "
+                "AUTOMATIC CONTEXT FETCHING: This tool automatically does everything in ONE CALL: "
+                "1. Automatically fetches trending topics from Reddit, YouTube, and Google News "
+                "2. Automatically generates a script based on the trends "
+                "3. Automatically clones voice from video (or reuses existing voice) "
+                "4. Automatically generates audio from script "
+                "5. Automatically extracts a frame from video "
+                "6. Automatically creates talking head video with D-ID. "
+                "Perfect for agents - complete content creation from topic to video in ONE CALL. "
+                "NO TOOL CHAINING NEEDED - all context fetching happens automatically internally."
+            ),
         inputSchema={
             "type": "object",
             "properties": {
@@ -565,9 +574,398 @@ async def list_tools() -> list[Tool]:
             },
             "required": ["topic", "duration_seconds", "video_path"]
         }
+    ),
+    Tool(
+        name="analyze_query",
+        description=(
+            "Analyze a user query to understand intent, topics, and context needs. "
+            "Returns structured analysis with recommended actions. "
+            "This tool helps understand what context might be needed for a query."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The user's query to analyze"
+                }
+            },
+            "required": ["query"]
+        }
     )
     ]
 
+
+# ============================================================================
+# MCP PROMPT HANDLERS - Automatic Context Injection
+# ============================================================================
+
+@app.list_prompts()
+async def list_prompts() -> list[Prompt]:
+    """List available prompt templates with automatic context injection."""
+    return [
+        Prompt(
+            name="trending_analysis",
+            description=(
+                "Analyze trending topics with automatic context injection. "
+                "When used, automatically fetches latest trending data from Reddit, YouTube, and News, "
+                "then enriches the prompt with context. NO TOOL CALLS NEEDED - context is automatically included."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="topic",
+                    description="The topic to analyze trends for (e.g., 'AI', 'climate change')",
+                    required=True
+                ),
+                PromptArgument(
+                    name="query",
+                    description="Optional specific query about the topic",
+                    required=False
+                )
+            ]
+        ),
+        Prompt(
+            name="script_generation",
+            description=(
+                "Generate a script with automatic context injection. "
+                "When used, automatically fetches trending data first, then provides enriched prompt for script generation. "
+                "NO TOOL CALLS NEEDED - context is automatically included."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="topic",
+                    description="The topic to create a script about",
+                    required=True
+                ),
+                PromptArgument(
+                    name="duration_seconds",
+                    description="Target duration of the script in seconds",
+                    required=False
+                ),
+                PromptArgument(
+                    name="style",
+                    description="Script style (e.g., 'informative', 'engaging', 'funny')",
+                    required=False
+                ),
+                PromptArgument(
+                    name="query",
+                    description="Optional specific query or requirements",
+                    required=False
+                )
+            ]
+        ),
+        Prompt(
+            name="content_creation",
+            description=(
+                "Complete content creation with automatic context injection. "
+                "When used, automatically fetches all necessary context for end-to-end content creation. "
+                "NO TOOL CALLS NEEDED - context is automatically included."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="topic",
+                    description="The topic for content creation",
+                    required=True
+                ),
+                PromptArgument(
+                    name="query",
+                    description="User's content creation request",
+                    required=False
+                )
+            ]
+        ),
+        Prompt(
+            name="query_with_context",
+            description=(
+                "Generic prompt that automatically analyzes any query and injects relevant context. "
+                "When used, automatically determines what context is needed and fetches it. "
+                "NO TOOL CALLS NEEDED - context is automatically included."
+            ),
+            arguments=[
+                PromptArgument(
+                    name="query",
+                    description="The user's query",
+                    required=True
+                )
+            ]
+        )
+    ]
+
+
+@app.get_prompt()
+async def get_prompt(name: str, arguments: dict[str, Any]):
+    """Get a prompt with automatic context injection."""
+    loop = asyncio.get_event_loop()
+    
+    middleware = get_middleware()
+    
+    # MCP protocol sends arguments as strings, so we need to convert them
+    def parse_arg(key: str, default: Any, arg_type: type = str) -> Any:
+        value = arguments.get(key, default)
+        if value is None or value == "":
+            return default
+        if arg_type == int:
+            try:
+                return int(value) if isinstance(value, (str, int)) else default
+            except (ValueError, TypeError):
+                return default
+        elif arg_type == float:
+            try:
+                return float(value) if isinstance(value, (str, int, float)) else default
+            except (ValueError, TypeError):
+                return default
+        return str(value) if value else default
+    
+    if name == "trending_analysis":
+        topic = parse_arg("topic", "")
+        query = parse_arg("query", f"What's trending about {topic}?")
+        
+        # Automatically fetch and inject context
+        enriched_query = await loop.run_in_executor(
+            _executor,
+            lambda: enrich_query_with_context(query)
+        )
+        middleware.track_prompt_enrichment(name, query)
+        
+        return GetPromptResult(
+            description="Trending analysis prompt with automatic context",
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=enriched_query
+                    )
+                )
+            ]
+        )
+    
+    elif name == "script_generation":
+        topic = parse_arg("topic", "")
+        duration = parse_arg("duration_seconds", 60, int)
+        style = parse_arg("style", "informative and engaging")
+        query = parse_arg("query", f"Generate a {duration}-second {style} script about {topic}")
+        
+        # Automatically fetch and inject context
+        enriched_query = await loop.run_in_executor(
+            _executor,
+            lambda: enrich_query_with_context(query)
+        )
+        middleware.track_prompt_enrichment(name, query)
+        
+        # Add script generation instructions
+        full_prompt = f"""{enriched_query}
+
+Please generate a {duration}-second script in a {style} style based on the context above."""
+        
+        return GetPromptResult(
+            description="Script generation prompt with automatic context",
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=full_prompt
+                    )
+                )
+            ]
+        )
+    
+    elif name == "content_creation":
+        topic = parse_arg("topic", "")
+        query = parse_arg("query", f"Create content about {topic}")
+        
+        # Automatically fetch and inject context
+        enriched_query = await loop.run_in_executor(
+            _executor,
+            lambda: enrich_query_with_context(query)
+        )
+        middleware.track_prompt_enrichment(name, query)
+        
+        return GetPromptResult(
+            description="Content creation prompt with automatic context",
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=enriched_query
+                    )
+                )
+            ]
+        )
+    
+    elif name == "query_with_context":
+        query = parse_arg("query", "")
+        
+        # Automatically analyze and inject context
+        enriched_query = await loop.run_in_executor(
+            _executor,
+            lambda: enrich_query_with_context(query)
+        )
+        middleware.track_prompt_enrichment(name, query)
+        
+        return GetPromptResult(
+            description="Generic query prompt with automatic context",
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=enriched_query
+                    )
+                )
+            ]
+        )
+    
+    else:
+        raise ValueError(f"Unknown prompt: {name}")
+
+
+# ============================================================================
+# MCP RESOURCE HANDLERS - Automatic Data Availability
+# ============================================================================
+
+@app.list_resources()
+async def list_resources() -> list[Resource]:
+    """List available resources (automatically maintained data)."""
+    # Resources are dynamically generated based on cached topics
+    # For now, return a template resource structure
+    resources = [
+        Resource(
+            uri="trending://topics/current",
+            name="Current Trending Topics",
+            description="Currently trending topics across all sources (auto-updated)",
+            mimeType="application/json"
+        )
+    ]
+    
+    # Add resources for cached topics (if any)
+    cache = get_cache()
+    # Note: In a real implementation, you'd track which topics have cached data
+    # For now, we'll return the template resource
+    
+    return resources
+
+
+@app.read_resource()
+async def read_resource(uri: str) -> TextResourceContents:
+    """Read a resource (returns pre-fetched, automatically maintained data)."""
+    uri_str = uri
+    loop = asyncio.get_event_loop()
+    middleware = get_middleware()
+    middleware.track_resource_access(uri_str)
+    
+    # Parse resource URI
+    if uri_str.startswith("trending://topics/"):
+        # Extract topic from URI
+        topic = uri_str.replace("trending://topics/", "").strip()
+        
+        if topic == "current":
+            # Return current trending topics (would need to track this)
+            # For now, return a placeholder
+            content = json.dumps({
+                "message": "Use trending://topics/{topic} to get specific topic data",
+                "example": "trending://topics/AI"
+            }, indent=2)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+        
+        # Fetch or get from cache
+        cache = get_cache()
+        cache_key = f"trending:{topic}:reddit_youtube_news"
+        cached_data = cache.get(cache_key)
+        
+        if cached_data:
+            content = json.dumps(cached_data, indent=2, default=str)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+        
+        # Fetch fresh data
+        try:
+            ideas_data = await loop.run_in_executor(
+                _executor,
+                lambda: generate_ideas(topic=topic, limit=5)
+            )
+            # Cache it
+            cache.set(cache_key, ideas_data, ttl=3600.0)
+            content = json.dumps(ideas_data, indent=2, default=str)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+        except Exception as e:
+            content = json.dumps({"error": str(e)}, indent=2)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+    
+    elif uri_str.startswith("content://voices/"):
+        # Extract voice name
+        voice_name = uri_str.replace("content://voices/", "").strip()
+        
+        # Get voice info
+        try:
+            voice_result = await loop.run_in_executor(
+                _executor,
+                lambda: find_voice_by_name(voice_name)
+            )
+            content = json.dumps(voice_result, indent=2, default=str)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+        except Exception as e:
+            content = json.dumps({"error": str(e)}, indent=2)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+    
+    elif uri_str == "content://voices":
+        # List all voices
+        try:
+            voices_result = await loop.run_in_executor(
+                _executor,
+                lambda: list_all_voices()
+            )
+            content = json.dumps(voices_result, indent=2, default=str)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+        except Exception as e:
+            content = json.dumps({"error": str(e)}, indent=2)
+            return TextResourceContents(
+                uri=uri_str,
+                text=content,
+                mimeType="application/json"
+            )
+    
+    else:
+        content = json.dumps({"error": f"Unknown resource: {uri_str}"}, indent=2)
+        return TextResourceContents(
+            uri=uri_str,
+            text=content,
+            mimeType="application/json"
+        )
+
+
+# ============================================================================
+# TOOL HANDLERS
+# ============================================================================
 
 @app.call_tool()
 async def call_tool(name: str, arguments: Any) -> list[TextContent]:
@@ -750,6 +1148,12 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                     output_video_path=arguments.get("output_video_path"),
                     frame_timestamp=arguments.get("frame_timestamp", 2.0)
                 )
+            )
+        
+        elif name == "analyze_query":
+            result = await loop.run_in_executor(
+                _executor,
+                lambda: analyze_query_intent(arguments["query"])
             )
         
         else:

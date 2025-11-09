@@ -149,6 +149,11 @@ class DIDVideo:
                     files=files,
                     timeout=30
                 )
+                
+                # Log response details before raising for status
+                logger.info(f"D-ID audio upload response status: {response.status_code}")
+                logger.info(f"D-ID audio upload response body: {response.text}")
+                
                 response.raise_for_status()
                 
                 result = response.json()
@@ -156,6 +161,8 @@ class DIDVideo:
                 
         except Exception as e:
             logger.error(f"Audio upload failed: {str(e)}")
+            logger.error(f"Audio file path: {audio_path}")
+            logger.error(f"Audio file size: {os.path.getsize(audio_path)} bytes")
             raise Exception(f"Failed to upload audio: {str(e)}")
     
     def _create_talk(self, image_url: str, audio_url: str) -> str:

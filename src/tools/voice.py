@@ -1,11 +1,29 @@
 """Voice generation tools combining script generation with ElevenLabs voice cloning."""
 
 import os
+import re
 import tempfile
 from typing import Dict, Any, Optional, List
 from .script import generate_complete_script, generate_script_from_ideas
 from ..utils.audio import extract_audio_from_video, validate_audio_file, cleanup_temp_audio
 from ..sources.elevenlabs_voice import ElevenLabsVoice
+
+
+def sanitize_filename(text: str) -> str:
+    """
+    Sanitize text for use in filenames by removing special characters.
+    
+    Args:
+        text: Text to sanitize
+        
+    Returns:
+        Sanitized text safe for filenames
+    """
+    # Remove or replace special characters
+    text = re.sub(r'[^\w\s-]', '', text)  # Remove anything not alphanumeric, space, dash, or underscore
+    text = re.sub(r'[-\s]+', '_', text)    # Replace spaces and dashes with underscore
+    text = text.strip('_')                  # Remove leading/trailing underscores
+    return text
 
 
 def generate_complete_content(
@@ -151,9 +169,10 @@ def generate_complete_content(
         if not output_audio_path:
             output_dir = os.path.join(os.path.dirname(__file__), "../../output/audio")
             os.makedirs(output_dir, exist_ok=True)
+            safe_topic = sanitize_filename(topic)[:20]  # Sanitize and limit length
             output_audio_path = os.path.join(
                 output_dir,
-                f"generated_audio_{topic.replace(' ', '_')[:20]}_{os.getpid()}.mp3"
+                f"generated_audio_{safe_topic}_{os.getpid()}.mp3"
             )
         
         # Step 5: Generate audio using voice
@@ -349,9 +368,10 @@ def generate_script_with_audio(
             output_dir = os.path.join(os.path.dirname(__file__), "../../output/audio")
             os.makedirs(output_dir, exist_ok=True)
             topic = ideas_data.get("topic", "content")
+            safe_topic = sanitize_filename(topic)[:20]  # Sanitize and limit length
             output_audio_path = os.path.join(
                 output_dir,
-                f"generated_audio_{topic.replace(' ', '_')[:20]}_{os.getpid()}.mp3"
+                f"generated_audio_{safe_topic}_{os.getpid()}.mp3"
             )
         
         # Step 5: Generate audio using voice

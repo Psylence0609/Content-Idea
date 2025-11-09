@@ -1,16 +1,46 @@
 # Content MCP Server
 
-A Python-based MCP (Model Context Protocol) server that provides tools for content creation, including idea generation from multiple sources and AI-powered script generation.
+A Python-based MCP (Model Context Protocol) server that provides **automatic context injection** for content creation. The server intelligently analyzes queries, fetches relevant context from multiple sources, and enriches responses **without requiring explicit tool calls**.
+
+## 🎯 Key Feature: Automatic Context Injection
+
+**The server automatically analyzes queries and injects context - no tool calls required!**
+
+### Three Paths to Automatic Context:
+
+1. **MCP Prompts**: Use `get_prompt()` - Server automatically fetches and injects context
+2. **MCP Resources**: Read `read_resource()` - Server returns pre-fetched context  
+3. **Composite Tools**: Call composite tools - They automatically fetch context internally
+
+**Example**: User asks "What's trending about AI?" → Agent uses `trending_analysis` prompt → Server automatically fetches trending data and injects it → Agent responds with full context (no tool calls needed!)
 
 ## Features
 
-### 1. Content Idea Generation
+### 1. Automatic Query Analysis & Context Injection
+- **Query Intent Detection**: Automatically analyzes queries to understand intent (trending_topics, script_generation, video_creation, etc.)
+- **Topic Extraction**: Extracts topics and subjects from queries
+- **Automatic Context Fetching**: Fetches relevant context from Reddit, YouTube, and News automatically
+- **Context Enrichment**: Formats and injects context into prompts automatically
+- **No Tool Calls Required**: Agents can use prompts/resources directly without calling tools
+
+### 2. MCP Prompts (Automatic Context Injection)
+- **`trending_analysis`**: Automatically fetches and injects trending data
+- **`script_generation`**: Automatically fetches trends and enriches script generation prompts
+- **`content_creation`**: Automatically fetches all context for content creation
+- **`query_with_context`**: Generic prompt that automatically analyzes and enriches any query
+
+### 3. MCP Resources (Automatic Data Availability)
+- **`trending://topics/{topic}`**: Latest trending data (auto-updated and cached)
+- **`content://voices`**: Available voices (auto-refreshed)
+- **Resources are queryable directly** - no tool calls needed
+
+### 4. Content Idea Generation
 Analyze trending topics from multiple sources:
 - **Reddit**: Hot and trending posts using PRAW
 - **YouTube**: Trending videos using YouTube Data API v3
 - **Google News**: Recent news articles via RSS feeds
 
-### 2. Script Generation
+### 5. Script Generation
 Generate monologue scripts using OpenRouter or Groq with:
 - **Automatic fallback**: If primary provider fails, automatically uses backup
 - Configurable duration and word count
@@ -18,14 +48,20 @@ Generate monologue scripts using OpenRouter or Groq with:
 - **Intelligent context integration**: Advanced context processing with ranking, sentiment analysis, and cross-source correlation
 - Support for various AI models from both providers
 
-### 3. Voice Generation
+### 6. Voice Generation
 Generate audio from scripts using ElevenLabs voice cloning:
 - **Voice Cloning**: Clone any voice from a video sample (10-60 seconds)
 - **Text-to-Speech**: Convert scripts to natural-sounding audio
 - **Complete Workflow**: From topic research to final audio in one call
 - **Three composite tools**: Full workflow, script+audio, or audio-only generation
 
-### 4. Enhanced Context Intelligence
+### 7. Video Generation
+Create talking head videos using D-ID:
+- **Frame Extraction**: Automatically extracts frames from videos
+- **Video Synthesis**: Creates realistic talking head videos
+- **Complete Workflow**: End-to-end video creation in one call
+
+### 8. Enhanced Context Intelligence
 The server uses advanced context processing to provide the best information to AI models:
 - **Intelligent Ranking**: Items are scored by relevance (40%), engagement (30%), recency (20%), and credibility (10%)
 - **Rich Content Extraction**: 
@@ -42,11 +78,102 @@ The server uses advanced context processing to provide the best information to A
 - **Cross-Source Correlation**: Finds connections and common themes between Reddit, YouTube, and News
 - **AI-Powered Summarization**: Uses Groq AI to generate intelligent summaries of trends and insights (with automatic fallback to rule-based summaries)
 - **Structured Summarization**: Creates intelligent, prioritized context summaries instead of raw data dumps
+- **Context Caching**: Intelligent caching for performance (1-hour TTL for trending data)
+
+## Automatic Context Injection
+
+### Using MCP Prompts (Recommended)
+
+**Prompts automatically fetch and inject context - no tool calls needed!**
+
+#### `trending_analysis` Prompt
+```python
+# Agent uses prompt - server automatically fetches context
+prompt = get_prompt("trending_analysis", {
+    "topic": "AI",
+    "query": "What's trending about AI?"
+})
+# Server automatically:
+# 1. Fetches trending data from Reddit, YouTube, News
+# 2. Formats intelligent summary
+# 3. Injects context into prompt
+# Result: Enriched prompt with context ready to use
+```
+
+#### `script_generation` Prompt
+```python
+# Agent uses prompt - server automatically fetches context
+prompt = get_prompt("script_generation", {
+    "topic": "climate change",
+    "duration_seconds": 60,
+    "style": "informative"
+})
+# Server automatically fetches trends and enriches prompt
+```
+
+#### `query_with_context` Prompt
+```python
+# Generic prompt for any query
+prompt = get_prompt("query_with_context", {
+    "query": "What's happening with artificial intelligence?"
+})
+# Server automatically analyzes query and injects relevant context
+```
+
+### Using MCP Resources
+
+**Resources provide pre-fetched, automatically maintained data - no tool calls needed!**
+
+#### Reading Trending Data
+```python
+# Read trending data directly (no tool call)
+data = read_resource("trending://topics/AI")
+# Server returns cached or fresh trending data
+```
+
+#### Reading Voice Information
+```python
+# Read voice data directly
+voice = read_resource("content://voices/test_woman")
+# Or list all voices
+voices = read_resource("content://voices")
+```
+
+### Using Composite Tools
+
+**Composite tools automatically fetch context internally - one call does everything!**
+
+#### `generate_complete_content`
+```python
+# One call does everything automatically
+result = generate_complete_content(
+    topic="AI",
+    duration_seconds=60,
+    video_path="/path/to/video.mp4"
+)
+# Tool automatically:
+# 1. Fetches trending data (internally)
+# 2. Generates script with context
+# 3. Clones voice
+# 4. Generates audio
+# No tool chaining needed!
+```
 
 ## Tools Available
 
-### `generate_ideas`
+### Query Analysis Tool
+
+#### `analyze_query`
+Analyze a query to understand intent and context needs.
+- **Returns**: Intent, topics, context sources, requirements, confidence
+- **Use case**: Understand what context might be needed for a query
+
+### Content Generation Tools
+
+#### `generate_ideas`
 Aggregates trending content from all sources (Reddit, YouTube, Google News).
+
+**Note**: For automatic context injection, use the `trending_analysis` prompt or `trending://topics/{topic}` resource instead.
 
 **Parameters:**
 - `topic` (string, required): The topic to search for (e.g., "AI", "climate change")
@@ -334,39 +461,94 @@ Add this server to your MCP client configuration. For Claude Desktop, add to you
 3. Receive audio file with cloned voice
 ```
 
+## Architecture: Automatic Context Injection
+
+### How It Works
+
+1. **Query Interception**: Agent uses prompt or reads resource
+2. **Query Analysis**: Server analyzes query intent automatically
+3. **Context Determination**: Server determines what context is needed
+4. **Automatic Fetching**: Server fetches context from Reddit, YouTube, News
+5. **Context Formatting**: Server formats context as intelligent summary
+6. **Prompt Enrichment**: Server injects context into prompt
+7. **Response**: Agent receives enriched prompt with context (no tool calls needed)
+
+### Flow Diagram
+
+```
+User Query
+    ↓
+Agent uses prompt/resource OR calls composite tool
+    ↓
+Server analyzes query intent
+    ↓
+Server determines context needs
+    ↓
+Server fetches context (or uses cache)
+    ↓
+Server formats context summary
+    ↓
+Server injects context into prompt
+    ↓
+Agent receives enriched prompt
+    ↓
+Agent responds with full context
+```
+
+### Key Components
+
+- **Query Analyzer**: Analyzes queries to understand intent and context needs
+- **Context Enricher**: Fetches and formats context automatically
+- **Context Cache**: Caches context for performance (1-hour TTL)
+- **Middleware**: Tracks context usage and provides statistics
+- **MCP Prompts**: Provide automatic context injection
+- **MCP Resources**: Provide pre-fetched, automatically maintained data
+
 ## Project Structure
 
 ```
 Content-MCP/
 ├── src/
 │   ├── __init__.py
-│   ├── server.py              # Main MCP server
+│   ├── server.py              # Main MCP server (with prompts/resources)
 │   ├── config.py              # Configuration management
 │   ├── tools/
 │   │   ├── __init__.py
 │   │   ├── ideas.py           # Idea generation tools
 │   │   ├── script.py          # Script generation tools
 │   │   ├── voice.py           # Voice generation tools
-│   │   ├── video.py           # Video generation tools (NEW)
+│   │   ├── video.py           # Video generation tools
 │   │   └── context_processor.py  # Intelligent context processing
 │   ├── utils/
 │   │   ├── __init__.py
 │   │   ├── audio.py           # Audio extraction utilities
-│   │   └── video.py           # Video processing utilities (NEW)
+│   │   ├── video.py           # Video processing utilities
+│   │   └── query_analyzer.py  # Query analysis engine (NEW)
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── context_enricher.py  # Context enrichment service (NEW)
+│   │   ├── context_cache.py     # Context caching service (NEW)
+│   │   └── tool_orchestrator.py # Tool orchestration (NEW)
+│   ├── middleware/
+│   │   ├── __init__.py
+│   │   └── context_middleware.py  # Context injection middleware (NEW)
 │   └── sources/
 │       ├── __init__.py
-│       ├── reddit.py          # Reddit API integration (enhanced)
-│       ├── youtube.py         # YouTube API integration (enhanced)
-│       ├── google_news.py     # Google News RSS integration (enhanced)
+│       ├── reddit.py          # Reddit API integration
+│       ├── youtube.py         # YouTube API integration
+│       ├── google_news.py     # Google News RSS integration
 │       ├── elevenlabs_voice.py  # ElevenLabs voice cloning
-│       └── did_video.py       # D-ID video generation (NEW)
+│       └── did_video.py       # D-ID video generation
 ├── output/
-│   ├── audio/                 # Generated audio files (NEW)
-│   └── video/                 # Generated video files (NEW)
+│   ├── audio/                 # Generated audio files
+│   └── video/                 # Generated video files
+├── docs/
+│   └── EXAMPLES.md            # Usage examples (NEW)
 ├── requirements.txt
 ├── README.md
 ├── test_voice_generation.py   # Voice generation tests
-├── test_video_generation.py   # Video generation tests (NEW)
+├── test_video_generation.py   # Video generation tests
+├── test_query_analysis.py     # Query analysis tests (NEW)
 └── .env                       # Your API keys (create this)
 ```
 
@@ -557,6 +739,26 @@ The server now includes complete video generation capabilities using D-ID API:
 
 ### Testing
 
+#### Query Analysis Tests
+
+Run the query analysis test suite:
+
+```bash
+python test_query_analysis.py
+```
+
+The test includes:
+- Query intent detection
+- Topic extraction
+- Implicit requirement detection
+- Context enrichment
+- Context fetching
+- Cache functionality
+- Tool orchestration
+- Middleware statistics
+
+#### Video Generation Tests
+
 Run the video generation test suite:
 
 ```bash
@@ -569,6 +771,20 @@ The test includes:
 - D-ID API connectivity
 - Video from video workflow
 - Complete end-to-end workflow
+
+#### Voice Generation Tests
+
+Run the voice generation test suite:
+
+```bash
+python test_voice_generation.py
+```
+
+The test includes:
+- Audio extraction from video
+- Voice cloning
+- Text-to-speech generation
+- Voice reuse functionality
 
 ### Troubleshooting Video Generation
 
