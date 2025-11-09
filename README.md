@@ -1,10 +1,10 @@
 # Content MCP Server
 
-**A one-stop MCP server for AI-powered content creation** — from trending research to final video, fully automated.
+**A one-stop MCP server for AI-powered content creation** from trending research to final video, fully automated.
 
 ## 🎯 Vision
 
-In the age of AI assistants, **context is everything**. This MCP server acts as an intelligent context engine that automatically fetches, analyzes, and injects real-time trending data from multiple sources (Reddit, YouTube, News) to power complete content creation workflows — no manual tool chaining required.
+In the age of AI assistants, **context is everything**. This MCP server acts as an intelligent context engine that automatically fetches, analyzes, and injects real-time trending data from multiple sources (Reddit, YouTube, News) to power complete content creation workflows.
 
 **The Challenge**: Content creators need trending insights, engaging scripts, voice cloning, and video generation. Existing solutions require complex tool orchestration.
 
@@ -329,43 +329,6 @@ See `demo_agent/README.md` for details.
 
 ---
 
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**"No inference API configured"**
-- Set `OPENROUTER_API_KEY` in `.env`
-- Server needs at least one inference provider
-
-**"Reddit/YouTube API error"**
-- Verify API keys in `.env`
-- Check rate limits (100/min for Reddit, 10K/day for YouTube)
-
-**"Audio validation failed"**
-- Video must contain clear speech (10-60 seconds)
-- Supported formats: MP4, MOV, AVI
-- Ensure ffmpeg is installed
-
-**"D-ID video generation failed"**
-- Check D-ID credits in your account
-- Image must be 256x256+ pixels
-- Audio file must be valid MP3/WAV
-
-**"Context injection not working"**
-- Ensure query is clear and specific
-- Try using explicit tool calls instead of prompts
-- Check logs for query analysis results
-
-### Debug Mode
-
-Set environment variable for verbose logging:
-```bash
-export MCP_DEBUG=1
-python -m src.server
-```
-
----
-
 ## 📁 Project Structure
 
 ```
@@ -410,15 +373,15 @@ Content-MCP/
 
 ### Creativity & Originality (50%)
 
-✅ **Unique Data Source**: Multi-source intelligence (Reddit + YouTube + News) — rare combination providing complementary perspectives
+✅ **Unique Data Source**: Multi-source intelligence (Reddit + YouTube + News), a rare combination providing complementary perspectives
 
-✅ **Clever Integration**: Automatic context injection via MCP prompts/resources — agent receives context without explicit tool calls
+✅ **Clever Integration**: Automatic context injection via MCP prompts/resources where the  agent receives context without explicit tool calls
 
 ✅ **Contextual Intelligence**: AI-powered analysis with ranking, trend detection, sentiment, cross-source correlation, and intelligent summarization
 
 ### Utility & Technical Merit (50%)
 
-✅ **Practical Value**: Complete content creation pipeline — solves real creator pain point of researching trends, writing scripts, and producing media
+✅ **Practical Value**: Complete content creation pipeline solves real creator pain point of researching trends, writing scripts, and producing media
 
 ✅ **Robustness**: 
 - Automatic fallbacks (OpenRouter ↔ Groq)
